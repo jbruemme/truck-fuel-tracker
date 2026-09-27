@@ -1,0 +1,84 @@
+#root {
+  min-height: 100vh;
+}
+
+.dashboard {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-header {
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.app-header p {
+  margin-top: 4px;
+  color: #6b7280;
+}
+
+.target-card {
+  padding: 24px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  background: #0a7cff;
+  color: white;
+}
+
+.target-card span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.target-card strong {
+  display: block;
+  font-size: 32px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat-card {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: white;
+}
+
+.stat-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 21px;
+}
+
+.add-fuel-button {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: #0a7cff;
+  color: white;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
