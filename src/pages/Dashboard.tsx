@@ -1,6 +1,14 @@
+import { useEffect, useState } from "react";
+
+// Components
+import AddFuelForm from "../components/AddFuelForm";
+import FuelSettings from "../components/FuelSettings";
 import StatCard from "../components/StatCard";
+
+// Types
 import type { FuelPurchase } from "../types/fuel";
 
+// Calculations
 import {
     calculateAverageFuelPrice,
     calculateTargetFuelPrice,
@@ -8,40 +16,57 @@ import {
     calculateTotalGallons,
 } from "../services/calculations";
 
+// Load/Save
+import {
+    loadPurchases,
+    loadSettings,
+    savePurchases,
+    saveSettings,
+} from "../services/storage.ts";
+
 
 function Dashboard() {
-    const fuelProtection = 0.5;
-    const mpg = 7;
 
-    const purchases: FuelPurchase[] = [
-        {
-            id: "1",
-            settlementDate: "2026-09-25",
-            transactionNumber: "10001",
-            fillDate: "2026-09-24",
-            location: "Love's",
-            pricePerGallon: 3.19,
-            gallons: 87.3,
-            totalCost: 278.487,
-        },
-        {
-            id: "2",
-            settlementDate: "2026-09-23",
-            transactionNumber: "10002",
-            fillDate: "2026-09-22",
-            location: "Flying J",
-            pricePerGallon: 3.29,
-            gallons: 102.8,
-            totalCost: 338.212,
-        },
-    ];
+    // Initialize use state for MPG and Fuel Protection
+    const [initializeSettings] = useState(loadSettings)
+    const [fuelProtection, setFuelProtection] = useState(initializeSettings.fuelProtection);
+    const [mpg, setMpg] = useState(initializeSettings.mpg);
 
+    // Initialize use state for fuel purchases and fuel purchase form
+    const [purchases, setPurchases] = useState<FuelPurchase[]>(loadPurchases);
+    const [showAddFuel, setShowAddFuel] = useState(false);
+
+    // Update and persist purchases
+    useEffect(() => {
+        savePurchases(purchases)
+    }, [purchases]);
+
+    // Update and persist settings
+    useEffect(() => {
+        saveSettings({
+            fuelProtection,
+            mpg,
+        });
+    }, [fuelProtection, mpg]);
+
+    // Dashboard calculations
     const totalGallons = calculateTotalGallons(purchases);
     const totalCost = calculateTotalCost(purchases);
     const averagePrice = calculateAverageFuelPrice(purchases);
     const targetPrice = calculateTargetFuelPrice(fuelProtection, mpg);
-
     const difference = averagePrice - targetPrice;
+
+    /**
+     * Function to add a fuel purchase
+     * @param purchase The purchase to be added to FuelPurchases
+     */
+    function handleAddPurchase(purchase: FuelPurchase) {
+        setPurchases((currentPurchases) => [
+            purchase,
+            ...currentPurchases,
+        ]);
+        setShowAddFuel(false);
+    }
 
     return (
         <div className="dashboard">
@@ -49,6 +74,13 @@ function Dashboard() {
                 <h1>Truck Fuel Tracker</h1>
                 <p>Fuel cost & efficiency</p>
             </header>
+
+            <FuelSettings
+                fuelProtection={fuelProtection}
+                mpg={mpg}
+                onFuelProtectionChange={setFuelProtection}
+                onMpgChange={setMpg}
+            />
 
             <section className="target-card">
                 <span>Target Fuel Price</span>
@@ -82,9 +114,18 @@ function Dashboard() {
                 />
             </section>
 
-            <button className="add-fuel-button">
+            <button
+                className="add-fuel-button"
+                onClick={() => setShowAddFuel(true)}
+            >
                 + Add Fuel Purchase
             </button>
+            {showAddFuel && (
+                <AddFuelForm
+                    onAdd={handleAddPurchase}
+                    onCancel={() => setShowAddFuel(false)}
+                />
+            )}
         </div>
     );
 }
