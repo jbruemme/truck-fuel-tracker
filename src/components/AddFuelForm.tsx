@@ -1,20 +1,33 @@
+// React
 import { useState } from "react";
+
+// Types
 import type { FormEvent } from "react";
 import type { FuelPurchase } from "../types/fuel";
-import { calculateFuelCost } from "../services/calculations";
+
+// Calculations
+import {
+    calculateFuelCost,
+    calculateTargetFuelPrice,
+} from "../services/calculations";
+
 
 interface AddFuelFormProps {
-    onAdd: (purchase: FuelPurchase) => void;
+    purchase?: FuelPurchase | null;
+    fuelProtection: number;
+    mpg: number;
+    onSave: (purchase: FuelPurchase) => void;
     onCancel: () => void;
 }
 
-function AddFuelForm({ onAdd, onCancel }: AddFuelFormProps) {
-    const [settlementDate, setSettlementDate] = useState("");
-    const [transactionNumber, setTransactionNumber] = useState("");
-    const [fillDate, setFillDate] = useState("");
-    const [location, setLocation] = useState("");
-    const [pricePerGallon, setPricePerGallon] = useState("");
-    const [gallons, setGallons] = useState("");
+function AddFuelForm({purchase, fuelProtection, mpg, onSave, onCancel, }: AddFuelFormProps) {
+
+    const [settlementDate, setSettlementDate] = useState(purchase?.settlementDate ?? "");
+    const [transactionNumber, setTransactionNumber] = useState(purchase?.transactionNumber ?? "");
+    const [fillDate, setFillDate] = useState(purchase?.fillDate ?? "");
+    const [location, setLocation] = useState(purchase?.location ?? "");
+    const [pricePerGallon, setPricePerGallon] = useState(purchase?.pricePerGallon ?? "");
+    const [gallons, setGallons] = useState(purchase?.gallons ?? "");
 
     const price = Number(pricePerGallon);
     const gallonAmount = Number(gallons);
@@ -31,8 +44,12 @@ function AddFuelForm({ onAdd, onCancel }: AddFuelFormProps) {
             return;
         }
 
-        const newPurchase: FuelPurchase = {
-            id: crypto.randomUUID(),
+        const purchaseFuelProtection = purchase?.fuelProtection ?? fuelProtection;
+        const purchaseMpg = purchase?.mpg ?? mpg;
+        const targetPrice = purchase?.targetPrice ?? calculateTargetFuelPrice(purchaseFuelProtection, purchaseMpg);
+
+        const savedPurchase: FuelPurchase = {
+            id: purchase?.id ?? crypto.randomUUID(),
             settlementDate,
             transactionNumber,
             fillDate,
@@ -40,15 +57,18 @@ function AddFuelForm({ onAdd, onCancel }: AddFuelFormProps) {
             pricePerGallon: price,
             gallons: gallonAmount,
             totalCost,
+            fuelProtection: purchaseFuelProtection,
+            mpg: purchaseMpg,
+            targetPrice,
         };
 
-        onAdd(newPurchase);
+        onSave(savedPurchase);
     }
 
     return (
         <section className="fuel-form-card">
             <div className="form-header">
-                <h2>Add Fuel Purchase</h2>
+                <h2>{purchase ? "Edit Fuel Purchase" : "Add Fuel Purchase"}</h2>
                 <button
                     type="button"
                     className="close-button"
@@ -149,7 +169,7 @@ function AddFuelForm({ onAdd, onCancel }: AddFuelFormProps) {
                     className="save-fuel-button"
                     disabled={price <= 0 || gallonAmount <= 0}
                 >
-                    Add Fuel Purchase
+                    {purchase ? "Save Changes" : "Add Fuel Purchase"}
                 </button>
 
                 <button

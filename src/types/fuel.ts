@@ -12,6 +12,10 @@ export interface FuelPurchase {
     pricePerGallon: number;
     gallons: number;
     totalCost: number;
+
+    fuelProtection: number;
+    mpg: number;
+    targetPrice: number;
 }
 
 /**

@@ -1,9 +1,12 @@
+// Reacct
 import { useEffect, useState } from "react";
 
 // Components
 import AddFuelForm from "../components/AddFuelForm";
 import FuelSettings from "../components/FuelSettings";
 import StatCard from "../components/StatCard";
+import PurchaseHistory from "../components/PurchaseHistory";
+
 
 // Types
 import type { FuelPurchase } from "../types/fuel";
@@ -14,6 +17,9 @@ import {
     calculateTargetFuelPrice,
     calculateTotalCost,
     calculateTotalGallons,
+    calculateTotalDifference,
+    calculateTotalTargetCost,
+    calculateDifferencePerGallon,
 } from "../services/calculations";
 
 // Load/Save
@@ -36,6 +42,9 @@ function Dashboard() {
     const [purchases, setPurchases] = useState<FuelPurchase[]>(loadPurchases);
     const [showAddFuel, setShowAddFuel] = useState(false);
 
+    // Initialize use state for editing a fuel purchase
+    const [editingPurchase, setEditingPurchase] = useState<FuelPurchase | null>(null);
+
     // Update and persist purchases
     useEffect(() => {
         savePurchases(purchases)
@@ -54,18 +63,60 @@ function Dashboard() {
     const totalCost = calculateTotalCost(purchases);
     const averagePrice = calculateAverageFuelPrice(purchases);
     const targetPrice = calculateTargetFuelPrice(fuelProtection, mpg);
-    const difference = averagePrice - targetPrice;
+    const totalTargetCost = calculateTotalTargetCost(purchases);
+    const totalDifference = calculateTotalDifference(purchases);
+    const differencePerGallon = calculateDifferencePerGallon(purchases);
+
+    // Performance Status
+    const performanceStatus = purchases.length === 0 ? "neutral" : totalDifference <= 0 ? "under-target" : "over-target";
+    /**
+     * Function to handle saving a fuel purchase (adding or editing)
+     * @param purchase The purchase to be saved to FuelPurchases
+     */
+    function handleSavePurchase(purchase: FuelPurchase) {
+        setPurchases((currentPurchases) => {
+            const exists = currentPurchases.some(
+                (current) => current.id === purchase.id
+            );
+
+            if (exists) {
+                return currentPurchases.map((current) =>
+                    current.id === purchase.id ? purchase : current
+                );
+            }
+
+            return [purchase, ...currentPurchases];
+        });
+
+        setEditingPurchase(null);
+        setShowAddFuel(false);
+    }
 
     /**
-     * Function to add a fuel purchase
-     * @param purchase The purchase to be added to FuelPurchases
+     * Function to delete a fuel purchase
+     * @param id The id of the fule purchase to be deleted
      */
-    function handleAddPurchase(purchase: FuelPurchase) {
-        setPurchases((currentPurchases) => [
-            purchase,
-            ...currentPurchases,
-        ]);
-        setShowAddFuel(false);
+    function handleDeletePurchase(id: string) {
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this fuel purchase?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setPurchases((currentPurchases) =>
+            currentPurchases.filter((purchase) => purchase.id != id)
+        );
+    }
+
+    /**
+     * Function to edit a fuel purchase
+     * @param purchase The fuel purchase being edited
+     */
+    function handleEditPurchase(purchase: FuelPurchase) {
+        setEditingPurchase(purchase);
+        setShowAddFuel(true);
     }
 
     return (
@@ -94,8 +145,13 @@ function Dashboard() {
                 />
 
                 <StatCard
-                    label="Total Cost"
+                    label="Actual Cost"
                     value={`$${totalCost.toFixed(2)}`}
+                />
+
+                <StatCard
+                    label="Target Cost"
+                    value={`$${totalTargetCost.toFixed(2)}`}
                 />
 
                 <StatCard
@@ -107,25 +163,58 @@ function Dashboard() {
                     label="Purchases"
                     value={purchases.length.toString()}
                 />
+            </section>
 
-                <StatCard
-                    label="Vs. Target"
-                    value={`${difference >= 0 ? "+" : ""}$${difference.toFixed(2)}`}
-                />
+            <section className={`performance-card ${performanceStatus}`}>
+                <span>Fuel Performance</span>
+
+                {purchases.length === 0 ? (
+                    <>
+                        <strong>No purchase data yet</strong>
+                        <p>Add a fuel purchase to begin tracking performance.</p>
+                    </>
+                ) : (
+                    <>
+
+                        <strong>
+                            ${Math.abs(totalDifference).toFixed(2)}{" "}
+                            {totalDifference <= 0 ? "UNDER" : "OVER"} TARGET
+                        </strong>
+
+                        <p>
+                            ${Math.abs(differencePerGallon).toFixed(3)}/gal{" "}
+                            {differencePerGallon <= 0 ? "under" : "over"}
+                        </p>
+                    </>
+                )}
             </section>
 
             <button
                 className="add-fuel-button"
-                onClick={() => setShowAddFuel(true)}
+                onClick={() => {
+                    setEditingPurchase(null);
+                    setShowAddFuel(true);
+                }}
             >
                 + Add Fuel Purchase
             </button>
             {showAddFuel && (
                 <AddFuelForm
-                    onAdd={handleAddPurchase}
-                    onCancel={() => setShowAddFuel(false)}
+                    purchase={editingPurchase}
+                    fuelProtection={fuelProtection }
+                    mpg={mpg}
+                    onSave={handleSavePurchase}
+                    onCancel={() => {
+                        setEditingPurchase(null);
+                        setShowAddFuel(false);
+                    }}
                 />
             )}
+            <PurchaseHistory
+                purchases={purchases}
+                onEdit={handleEditPurchase}
+                onDelete={handleDeletePurchase}
+            />
         </div>
     );
 }
